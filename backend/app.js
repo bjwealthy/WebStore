@@ -1,10 +1,22 @@
 //Mongdb connection: mongodb+srv://bjwealthy:<password>@cluster0-odz6x.mongodb.net/test?retryWrites=true&w=majority
 
+/*we cut all our routes from app.js and 
+paste them in the router, as we register 
+the routes to the router
+NOTE: we replace all occurrences of app with router
+*/
 const express = require('express');
-const app = express();
+var router = express.Router()
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const Thing = require('./models/thing');
+const path = require('path');
+//expose the router
+const stuffRoutes = require('./routes/stuff');
+const userRoutes = require('./routes/user');
+
+const app = express();
+
+
 
 mongoose.connect('mongodb+srv://bjwealthy:sokot777so18599@cluster0-odz6x.mongodb.net/test?retryWrites=true&w=majority')
     .then(() => {
@@ -27,91 +39,47 @@ app.use((req, res, next) => {
 //convert the body into a usable json object:
 app.use(bodyParser.json());
 
-//post route for creating a thing
-app.post('/api/stuff', (req, res, next) => {
-    const thing = new Thing({
-        //id field is generated automatically by mongo
-        title: req.body.title,
-        description: req.body.description,
-        imageUrl: req.body.imageUrl,
-        price: req.body.price,
-        userId: req.body.userId
-//the save() method returns a promise so we can have a then() block 
-//that will send the response back to the frontend.   
-    });
-    thing.save().then(
-        () => { //bcos this is sending an http request, we always need to send a response back to prevent the request from timing out 
-            res.status(201).json({
-                message: 'Post saved successfully!'
-            });
-        } 
-    ).catch(
-        (error) => {
-            res.status(400).json({
-                error: error
-            });
-        }
-    );
-});
+/***
+ * we need to serve up our static images directory - tell 
+ * our express app how to handle requests giong to /images
+ */
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
-//route for one thing: id is a variable/dynamic part of the path, so we do :id
-app.get('/api/stuff/:id', (req, res, next) => {
-    Thing.findOne({
-        _id: req.params.id //to access a dynamic variable we use 'params'
-    }).then(
-        (thing) => {
-            res.status(200).json(thing);
-        }
-    ).catch(
-        (error) => {
-            res.status(404).json({
-                error: error
-            });
-        }
-    );
-});
+//use the exposed router: any request sent to /api/stuff'
+//will be sent to the router stuffRoutes
+app.use('/api/stuff', stuffRoutes)
+app.use('/api/auth', userRoutes);
 
-//modify a thing: using a 'put' request:
-app.put('/api/stuff/:id', (req, res, next) => {
-    const thing = new Thing({
-        _id: req.params.id,
-        title: req.body.title,
-        description: req.body.description,
-        imageUrl: req.body.imageUrl,
-        price: req.body.price,
-        userId: req.body.userId
-    });
-    Thing.updateOne({_id: req.params.id}, thing).then(
-        () => {
-            res.status(201).json({
-                message: 'Thing updated successfully!'
-            });
-        }
-    ).catch(
-        (eror) => {
-            res.status(400).json({
-                error: error
-            });
-        }
-    );
-});
+//make app.js available outside
+module.exports = router;
+module.exports = app;
 
-//delete a thing:
-app.delete('/api/stuff/:id', (req, res, next) => {
-    Thing.deleteOne({_id: req.params.id}).then(
-        () => {
-            res.status(200).json({
-                message: 'Item Deleted!'
-            });
-        }
-    ).catch(
-        (error) => {
-            res.status(400).json({
-                error: error
-            });
-        }
-    );
-});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 //create hardcoded things
@@ -147,24 +115,9 @@ app.use('/api/stuff', (req, res, next) => {
     ];
 });
 */
-//read a single thing
-app.use('/api/stuff', (req, res, next) => {
-    Thing.find().then(
-        (things) => {
-            res.status(200).json(things);
-        }
-    ).catch(
-        (error) => {
-            res.status(400).json({
-                error: error   
-            });
-        }
-    );
-});
 
-module.exports = app;
 
-//you can upload iamges here:
+//you can upload images here:
 //https://commons.wikimedia.org/wiki/Main_Page
 
 //https://upload.wikimedia.org/wikipedia/commons/e/e3/Canon_EOS_60D_01.jpg
